@@ -4,7 +4,7 @@ return [
     'port'  =>  "3306",
     'name'  =>  "meusalao_communication",
     'user'  =>  "root",
-    'pass'  =>  "@nalICE4",
+    'pass'  =>  "123455",
     'type'  =>  "mysql",
     'prep'  =>  "1"
 ];
