@@ -11,10 +11,6 @@
     --ad-font-size-super: 1.25rem;
     --ad-menu-item-color: #4d93ff;
     --ad-menu-size: 300px;
-    /* outras que podem ser personalizadas
-    border-radius: var(--bs-border-radius);
-    border: var(--bs-border-width) solid var(--bs-border-color);
-    */
 }
 
 [data-bs-theme=light] {

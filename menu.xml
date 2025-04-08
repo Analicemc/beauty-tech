@@ -22,6 +22,37 @@
                 <icon>fas:tachometer fa-fw</icon>
                 <action>DashboardFinanceiro#method=onShow</action>
             </menuitem>
+            <menuitem
+                label='Categorias de contas'>	
+                <icon>fas:tags fa-fw</icon>
+                <action>CategoriaList#method=onShow</action>
+            </menuitem>
+        </menu>
+    </menuitem>
+
+    <menuitem label='Agendamentos'>
+        <icon>fas:calendar-plus fa-fw</icon>
+        <menu>
+            <menuitem
+                label='Agendamentos'>
+                <icon>fas:address-book fa-fw</icon>
+                <action>AgendamentoList#method=onShow</action>
+            </menuitem>
+            <menuitem
+                label='Calendário de Agendamentos'>
+                <icon>fas:calendar fa-fw</icon>
+                <action>AgendamentoCalendarFormView#method=onShow</action>
+            </menuitem>
+            <menuitem
+                label='Procedimentos'>
+                <icon>fas:clipboard fa-fw</icon>
+                <action>ProcedimentoList#method=onShow</action>
+            </menuitem>
+            <menuitem
+                label='Estados Agendamentos'>
+                <icon>fas:tags fa-fw</icon>
+                <action>EstadoAgendamentoList#method=onShow</action>
+            </menuitem>
         </menu>
     </menuitem>
 

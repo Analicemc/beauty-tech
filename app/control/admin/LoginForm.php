@@ -103,7 +103,6 @@ class LoginForm extends TPage
             $this->form->addFooterAction(_t('Reset password'), new TAction(['SystemRequestPasswordResetForm', 'onLoad']), '');
         }
         
-        // add the form to the page
         parent::add($this->form);
     }
     

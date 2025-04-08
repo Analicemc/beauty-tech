@@ -4,6 +4,9 @@
 
 //</fileHeader>
 
+use Adianti\Database\TTransaction;
+use Adianti\Widget\Form\TLabel;
+use Adianti\Widget\Template\THtmlRenderer;
 class DashboardFinanceiro extends TPage
 {
     protected $form;
@@ -69,10 +72,6 @@ class DashboardFinanceiro extends TPage
         $filterVar = TipoConta::PAGAR;
         $criteria_previsto_pagar_categoria->add(new TFilter('conta.tipo_conta_id', '=', $filterVar));
 
-        //<onBeginPageCreation>
-
-        //</onBeginPageCreation>
-
         $mes = new TCombo('mes');
         $ano = new TCombo('ano');
         $button_buscar = new TButton('button_buscar');
@@ -85,7 +84,6 @@ class DashboardFinanceiro extends TPage
         $previsto_receber_categoria = new BDonutChart('previsto_receber_categoria');
         $previsto_pagar_categoria = new BDonutChart('previsto_pagar_categoria');
         $previsto_receber_mes = new BLineChart('previsto_receber_mes');
-
 
         $button_buscar->setAction(new TAction(['DashboardFinanceiro', 'onShow']), "Buscar");
         $button_buscar->addStyleClass('btn-primary');
@@ -337,9 +335,6 @@ class DashboardFinanceiro extends TPage
         $previsto_receber_mes->showArea(false);
         $previsto_receber_mes->disableZoom();
 
-        //<onBeforeAddFieldsToForm>
-
-        //</onBeforeAddFieldsToForm>
         $row1 = $this->form->addFields([new TLabel("Mês:", null, '14px', null, '100%'), $mes], [new TLabel("Ano:", null, '14px', null), $ano], [new TLabel(" ", null, '14px', null, '100%'), $button_buscar]);
         $row1->layout = [' col-sm-2', ' col-sm-2', 'col-sm-2'];
 
@@ -349,15 +344,11 @@ class DashboardFinanceiro extends TPage
         $row3 = $this->form->addFields([$previsto_a_pagar], [$a_pagar], [$pago]);
         $row3->layout = [' col-sm-4', ' col-sm-4', ' col-sm-4'];
 
-        $row4 = $this->form->addFields([$previsto_receber_categoria], [$previsto_pagar_categoria]);
+        /*$row4 = $this->form->addFields([$previsto_receber_categoria], [$previsto_pagar_categoria]);
         $row4->layout = [' col-sm-6', 'col-sm-6'];
 
         $row5 = $this->form->addFields([$previsto_receber_mes]);
-        $row5->layout = [' col-sm-12'];
-
-        //<onAfterFieldsCreation>
-
-        //</onAfterFieldsCreation>
+        $row5->layout = [' col-sm-12'];*/
 
         if (!isset($param['mes']) && $mes->getValue()) {
             $_POST['mes'] = $mes->getValue();
@@ -438,45 +429,83 @@ class DashboardFinanceiro extends TPage
             $criteria_previsto_receber_mes->add(new TFilter('conta.ano_vencimento', '=', $filterVar));
         }
 
-        //<onBeforeGenerateCharts>
+        BChart::generate($previsto_a_receber, $a_receber, $recebido, $previsto_a_pagar, $a_pagar, $pago/*, $previsto_receber_categoria, $previsto_pagar_categoria, $previsto_receber_mes*/);
+        TTransaction::open('meusalao');
+        // TTransaction::dump();
+        $criteria_previsto_receber_categoria->setProperty('order', 'categoria_id');
+        $contas_receber_categoria = Conta::getObjects($criteria_previsto_receber_categoria);
+        $arr = [];
+        $arr[] = ['Categoria', 'Valor'];
 
-        //</onBeforeGenerateCharts>
-        BChart::generate($previsto_a_receber, $a_receber, $recebido, $previsto_a_pagar, $a_pagar, $pago, $previsto_receber_categoria, $previsto_pagar_categoria, $previsto_receber_mes);
+        foreach($contas_receber_categoria as $conta) {
+            $arr[] = [$conta->categoria->nome, $conta->valor];
+        }
+        
+        $html = new THtmlRenderer('app/resources/google_pie_chart.html');
+        $html->enableSection('main', array('data' => json_encode($arr),
+                                                                    'width'  => '100%',
+                                                                    'height'  => '300px',
+                                                                    'title'  => 'Contas a receber por categoria',
+                                                                    'ytitle' => 'Categoria', 
+                                                                    'xtitle' => 'Valor',
+                                                                    'uniqid' => uniqid()));
 
-        // create the form actions
-
-        // vertical box container
+        $criteria_previsto_pagar_categoria->setProperty('order', 'categoria_id');
+        $contas_pagar_categoria = Conta::getObjects($criteria_previsto_pagar_categoria);
+        $arr = [];
+        $arr[] = ['Categoria', 'Valor'];
+        foreach($contas_pagar_categoria as $conta) {
+            $arr[] = [$conta->categoria->nome, $conta->valor];
+        }
+        $html_pagar = new THtmlRenderer('app/resources/google_pie_chart.html');
+        $html_pagar->enableSection('main', array('data' => json_encode($arr),
+                                                                            'width'  => '100%',
+                                                                            'height'  => '300px',
+                                                                            'title'  => 'Contas a pagar por categoria',
+                                                                            'ytitle' => 'Categoria', 
+                                                                            'xtitle' => 'Valor',
+                                                                            'uniqid' => uniqid()));
+        $arr = [];
+        $arr[] = [ 'Mês', 'Valor'];
+        $meses = TempoService::getMesesSemZeros();
+        $criteria_previsto_receber_mes->add(new TFilter('tipo_conta_id', '=', TipoConta::RECEBER));
+        $criteria_previsto_receber_mes->setProperty('order', 'mes_vencimento asc');
+        $contas_previsto_receber_mes = Conta::getObjects($criteria_previsto_receber_mes);
+        $contas_somadas = [];
+        foreach($contas_previsto_receber_mes as $conta) {
+            if(!isset($contas_somadas[$conta->mes_vencimento])) {
+                $contas_somadas[$meses[$conta->mes_vencimento]] = 0;
+            }
+            $contas_somadas[$meses[$conta->mes_vencimento]] += $conta->valor;
+        }
+        foreach($contas_somadas as $key => $value) {
+            $arr[] = [$key, $value];
+        }
+        $html_previsto_receber = new THtmlRenderer('app/resources/google_line_chart.html');
+        $html_previsto_receber->enableSection('main', array('data'   => json_encode($arr),
+                                                                                        'width'  => '100%',
+                                                                                        'height'  => '300px',
+                                                                                        'title'  => 'Previsto a receber por mês',
+                                                                                        'ytitle' => 'Valor', 
+                                                                                        'xtitle' => 'Mês',
+                                                                                        'uniqid' => uniqid()));
+        TTransaction::close();
+        
         $container = new TVBox;
         $container->style = 'width: 100%';
         $container->class = 'form-container';
-        if (empty($param['target_container'])) {
-            // $container->add(TBreadCrumb::create(["Financeiro", "Dashboard"]));
-        }
         $container->add($this->form);
-
-        //<onAfterPageCreation>
-
-        //</onAfterPageCreation>
+        $container->add($html);
+        $container->add($html_pagar);
+        $container->add(new TLabel("<h4>Previsto a receber por mês</h4>", '#333', '14', 'B'));
+        $container->add($html_previsto_receber);
 
         parent::add($container);
     }
 
-    //<generated-onEdit>
-
-    //</generated-onEdit>
-
     public function onShow($param = null)
     {
 
-        //<onShow>
-
-        //</onShow>
     }
-
-    //</hideLine> <addUserFunctionsCode/>
-
-    //<userCustomFunctions>
-
-    //</userCustomFunctions>
 
 }
